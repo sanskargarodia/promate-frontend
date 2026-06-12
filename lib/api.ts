@@ -16,6 +16,17 @@ export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   parts?: PartCard[];
+  purchaseHandoff?: PurchaseHandoffEvent;
+};
+
+export type PurchaseHandoffEvent = {
+  type: "purchase_handoff";
+  allowed?: boolean;
+  ps_number?: string;
+  source_url?: string;
+  price_cents?: number | null;
+  in_stock?: boolean | null;
+  reason?: string;
 };
 
 type ChatEvent = {
@@ -23,7 +34,17 @@ type ChatEvent = {
   content?: string;
   thread_id?: string;
   part?: PartCard;
+  allowed?: boolean;
+  ps_number?: string;
+  source_url?: string;
+  price_cents?: number | null;
+  in_stock?: boolean | null;
+  reason?: string;
 };
+
+export function partSelectUrl(part: PartCard): string {
+  return part.source_url ?? "";
+}
 
 export async function fetchParts(
   q?: string,
@@ -54,6 +75,26 @@ export function formatPrice(cents?: number | null): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+export type CompatibilityResult = {
+  ps_number: string;
+  model_number: string;
+  compatible: boolean | null;
+  part_name?: string | null;
+  message: string;
+};
+
+export async function checkCompatibility(
+  psNumber: string,
+  modelNumber: string,
+): Promise<CompatibilityResult> {
+  const res = await fetch(
+    `${API_BASE}/api/v1/parts/${encodeURIComponent(psNumber)}/compatibility/${encodeURIComponent(modelNumber)}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) throw new Error(`Compatibility check failed (${res.status})`);
+  return res.json();
+}
+
 export async function* streamChat(
   message: string,
   threadId?: string,
@@ -61,7 +102,10 @@ export async function* streamChat(
   const res = await fetch(`${API_BASE}/api/v1/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-    body: JSON.stringify({ message, thread_id: threadId }),
+    body: JSON.stringify({
+      message,
+      thread_id: threadId,
+    }),
   });
   if (!res.ok || !res.body) {
     throw new Error(`Chat failed (${res.status})`);
