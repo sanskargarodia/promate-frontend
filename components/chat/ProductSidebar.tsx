@@ -1,0 +1,55 @@
+"use client";
+
+import Link from "next/link";
+
+import { formatPrice, type PartCard } from "@/lib/api";
+
+type Props = {
+  part: PartCard;
+};
+
+export function ProductSidebar({ part }: Props) {
+  const imageUrl = part.image_urls[0];
+
+  return (
+    <aside className="flex w-72 shrink-0 flex-col border-r border-partselect-gray-200 bg-partselect-gray-50">
+      <div className="bg-amber-400 px-3 py-2.5 text-sm font-bold text-partselect-gray-900">
+        Product Information
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
+        {imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt={part.name}
+            className="mx-auto max-h-36 w-full rounded-lg border border-partselect-gray-200 bg-white object-contain p-2"
+          />
+        )}
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-partselect-teal">
+            {part.ps_number}
+          </p>
+          <h3 className="mt-1 text-sm font-bold leading-snug text-partselect-gray-900">
+            {part.name}
+          </h3>
+          <p className="mt-2 text-lg font-bold text-partselect-green">
+            {formatPrice(part.price_cents)}
+          </p>
+          <p className="mt-1 text-xs text-partselect-gray-600">
+            {part.in_stock ? "In stock" : "Out of stock"}
+            {part.brand ? ` · ${part.brand}` : ""}
+          </p>
+        </div>
+
+        <Link
+          href={`/parts/${part.ps_number}`}
+          className="mt-auto block rounded-md bg-amber-400 px-3 py-2 text-center text-xs font-bold text-partselect-gray-900 hover:bg-amber-500"
+        >
+          View on PartSelect
+        </Link>
+      </div>
+    </aside>
+  );
+}
