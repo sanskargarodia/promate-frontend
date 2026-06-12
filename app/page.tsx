@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -13,18 +15,18 @@ export default function Home() {
           symptoms — all scoped to PartSelect refrigerator and dishwasher catalog.
         </p>
         <div className="mt-8 flex flex-wrap gap-4">
-          <button
-            type="button"
+          <Link
+            href="/parts?type=refrigerator"
             className="rounded-md bg-partselect-green px-6 py-3 text-sm font-semibold text-white shadow hover:bg-partselect-green-dark focus:outline-none focus:ring-2 focus:ring-partselect-green-light focus:ring-offset-2"
           >
             Browse Refrigerator Parts
-          </button>
-          <button
-            type="button"
+          </Link>
+          <Link
+            href="/parts?type=dishwasher"
             className="rounded-md border border-white/40 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-partselect-teal"
           >
             Browse Dishwasher Parts
-          </button>
+          </Link>
         </div>
       </section>
 
