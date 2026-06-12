@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { formatPrice, partSelectUrl, type PartCard } from "@/lib/api";
 
 type Props = {
@@ -13,7 +11,7 @@ export function ProductSidebar({ part }: Props) {
   const externalUrl = partSelectUrl(part);
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-r border-partselect-gray-200 bg-partselect-gray-50">
+    <aside className="hidden w-72 shrink-0 flex-col border-r border-partselect-gray-200 bg-partselect-gray-50 md:flex">
       <div className="bg-amber-400 px-3 py-2.5 text-sm font-bold text-partselect-gray-900">
         Product Information
       </div>
@@ -44,13 +42,6 @@ export function ProductSidebar({ part }: Props) {
           </p>
         </div>
 
-        <Link
-          href={`/parts/${part.ps_number}`}
-          className="block rounded-md border border-partselect-teal bg-white px-3 py-2 text-center text-xs font-semibold text-partselect-teal hover:bg-partselect-gray-50"
-        >
-          View part details
-        </Link>
-
         {externalUrl ? (
           <a
             href={externalUrl}
@@ -58,7 +49,7 @@ export function ProductSidebar({ part }: Props) {
             rel="noopener noreferrer"
             className="block rounded-md bg-partselect-green px-3 py-2 text-center text-xs font-bold text-white hover:bg-partselect-green-dark"
           >
-            Order on PartSelect.com
+            View on PartSelect.com
           </a>
         ) : null}
       </div>
