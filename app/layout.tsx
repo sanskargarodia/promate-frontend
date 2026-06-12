@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+
+import { ChatWidget } from "@/components/chat/ChatWidget";
+
 import "./globals.css";
 
 const inter = Inter({
@@ -45,6 +48,7 @@ export default function RootLayout({
           </div>
         </header>
         <main>{children}</main>
+        <ChatWidget />
         <footer className="mt-auto border-t border-partselect-gray-200 bg-partselect-gray-50">
           <div className="mx-auto max-w-7xl px-4 py-6 text-center text-sm text-partselect-gray-600 sm:px-6 lg:px-8">
             ProMate assists with refrigerator and dishwasher parts only.
