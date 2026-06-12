@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { formatPrice, type PartCard } from "@/lib/api";
+import { formatPrice, partSelectUrl, type PartCard } from "@/lib/api";
 
 type Props = {
   part: PartCard;
@@ -10,6 +10,7 @@ type Props = {
 
 export function ProductSidebar({ part }: Props) {
   const imageUrl = part.image_urls[0];
+  const externalUrl = partSelectUrl(part);
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-partselect-gray-200 bg-partselect-gray-50">
@@ -45,10 +46,21 @@ export function ProductSidebar({ part }: Props) {
 
         <Link
           href={`/parts/${part.ps_number}`}
-          className="mt-auto block rounded-md bg-amber-400 px-3 py-2 text-center text-xs font-bold text-partselect-gray-900 hover:bg-amber-500"
+          className="block rounded-md border border-partselect-teal bg-white px-3 py-2 text-center text-xs font-semibold text-partselect-teal hover:bg-partselect-gray-50"
         >
-          View on PartSelect
+          View part details
         </Link>
+
+        {externalUrl ? (
+          <a
+            href={externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-md bg-partselect-green px-3 py-2 text-center text-xs font-bold text-white hover:bg-partselect-green-dark"
+          >
+            Order on PartSelect.com
+          </a>
+        ) : null}
       </div>
     </aside>
   );

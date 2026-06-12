@@ -2,10 +2,39 @@
 
 import { FormEvent, useCallback, useMemo, useRef, useState } from "react";
 
-import { streamChat, type ChatMessage, type PartCard } from "@/lib/api";
+import {
+  formatPrice,
+  streamChat,
+  type ChatMessage,
+  type PartCard,
+  type PurchaseHandoffEvent,
+} from "@/lib/api";
 
 import { ChatMessageContent } from "./ChatMessageContent";
 import { ProductSidebar } from "./ProductSidebar";
+
+function PurchaseHandoffBanner({ handoff }: { handoff: PurchaseHandoffEvent }) {
+  if (!handoff.allowed || !handoff.ps_number || !handoff.source_url) return null;
+
+  return (
+    <div className="mt-3 rounded-lg border border-partselect-green bg-white p-3">
+      <p className="text-xs font-semibold text-partselect-teal">Ready to order</p>
+      <p className="mt-1 text-sm text-partselect-gray-800">
+        {handoff.ps_number}
+        {handoff.price_cents != null && ` · ${formatPrice(handoff.price_cents)}`}
+        {handoff.in_stock != null && (handoff.in_stock ? " · In stock" : " · Out of stock")}
+      </p>
+      <a
+        href={handoff.source_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 inline-block rounded-md bg-partselect-green px-3 py-2 text-xs font-bold text-white hover:bg-partselect-green-dark"
+      >
+        Order on PartSelect.com
+      </a>
+    </div>
+  );
+}
 
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -35,6 +64,7 @@ export function ChatWidget() {
 
       let assistant = "";
       const cards: PartCard[] = [];
+      let handoff: PurchaseHandoffEvent | undefined;
       const seenPs = new Set<string>();
 
       const pushCard = (part: PartCard) => {
@@ -47,6 +77,17 @@ export function ChatWidget() {
         for await (const event of streamChat(text.trim(), threadId)) {
           if (event.type === "session" && event.thread_id) {
             setThreadId(event.thread_id);
+          }
+          if (event.type === "purchase_handoff" && event.allowed) {
+            handoff = {
+              type: "purchase_handoff",
+              allowed: event.allowed,
+              ps_number: event.ps_number,
+              source_url: event.source_url,
+              price_cents: event.price_cents,
+              in_stock: event.in_stock,
+              reason: event.reason,
+            };
           }
           if (event.type === "token" && event.content) {
             assistant += event.content;
@@ -64,6 +105,7 @@ export function ChatWidget() {
             role: "assistant",
             content: assistant || "No response from the assistant. Please try again.",
             parts: cards.length > 0 ? cards : undefined,
+            purchaseHandoff: handoff,
           },
         ]);
       } catch (err) {
@@ -122,7 +164,8 @@ export function ChatWidget() {
               >
                 {messages.length === 0 && (
                   <p className="text-sm text-partselect-gray-600">
-                    Ask about a part, compatibility, installation, or troubleshooting.
+                    Ask about a part, compatibility, installation, or troubleshooting. When you are
+                    ready to buy, the assistant will link you to PartSelect.com.
                   </p>
                 )}
                 {messages.map((msg, i) => (
@@ -135,6 +178,9 @@ export function ChatWidget() {
                     }`}
                   >
                     <ChatMessageContent content={msg.content} variant={msg.role} />
+                    {msg.purchaseHandoff && (
+                      <PurchaseHandoffBanner handoff={msg.purchaseHandoff} />
+                    )}
                     {msg.parts?.slice(1).map((p) => (
                       <a
                         key={p.ps_number}
