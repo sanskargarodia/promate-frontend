@@ -12,7 +12,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "ProMate Assistant",
   description:
-    "AI assistant for PartSelect refrigerator and dishwasher parts — compatibility, install help, and purchase handoff.",
+    "AI assistant for PartSelect appliance parts — compatibility, install help, troubleshooting, and purchase handoff.",
 };
 
 export default function RootLayout({

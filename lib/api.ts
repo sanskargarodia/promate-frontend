@@ -11,6 +11,8 @@ export type PartCard = {
   in_stock: boolean;
   image_urls: string[];
   source_url?: string | null;
+  card_role?: "primary" | "recommended";
+  recommendation_reason?: string | null;
 };
 
 export type ChatMessage = {
@@ -18,6 +20,12 @@ export type ChatMessage = {
   content: string;
   parts?: PartCard[];
   purchaseHandoff?: PurchaseHandoffEvent;
+  suggestions?: string[];
+};
+
+export type SuggestionsEvent = {
+  type: "suggestions";
+  prompts: string[];
 };
 
 export type PurchaseHandoffEvent = {
@@ -36,12 +44,14 @@ type ChatEvent = {
   message?: string;
   thread_id?: string;
   part?: PartCard;
+  card_role?: "primary" | "recommended";
   allowed?: boolean;
   ps_number?: string;
   source_url?: string;
   price_cents?: number | null;
   in_stock?: boolean | null;
   reason?: string;
+  prompts?: string[];
 };
 
 export type AgentStatusEvent = {

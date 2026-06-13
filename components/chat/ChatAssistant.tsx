@@ -25,10 +25,10 @@ import { ProductSidebar } from "./ProductSidebar";
 const DEFAULT_ACTIVITY = "Thinking…";
 
 const SUGGESTED_PROMPTS = [
-  "My dishwasher won't drain — what part might I need?",
+  "My ice maker stopped working — what part might I need?",
   "Will PS11752778 fit model WDT780SAEM1?",
   "How can I install part PS11752778?",
-  "I'm ready to buy PS11752778",
+  "Tell me about part PS11752778",
   "What is the status of order ORD-DEMO-001?",
 ];
 
@@ -79,6 +79,11 @@ function PartCardLink({ part }: { part: PartCard }) {
             {part.ps_number}
           </span>
           <span className="text-partselect-gray-600">{part.name}</span>
+          {part.recommendation_reason && (
+            <span className="mt-1 block text-partselect-gray-500">
+              {part.recommendation_reason}
+            </span>
+          )}
         </span>
       </div>
     );
@@ -104,8 +109,43 @@ function PartCardLink({ part }: { part: PartCard }) {
           {part.ps_number}
         </span>
         <span className="text-partselect-gray-600">{part.name}</span>
+        {part.recommendation_reason && (
+          <span className="mt-1 block text-partselect-gray-500">
+            {part.recommendation_reason}
+          </span>
+        )}
       </span>
     </a>
+  );
+}
+
+function SuggestedPrompts({
+  prompts,
+  onSelect,
+  disabled,
+  className = "",
+}: {
+  prompts: string[];
+  onSelect: (prompt: string) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  if (prompts.length === 0) return null;
+
+  return (
+    <div className={`mt-3 flex flex-wrap gap-2 ${className}`}>
+      {prompts.map((prompt) => (
+        <button
+          key={prompt}
+          type="button"
+          disabled={disabled}
+          onClick={() => onSelect(prompt)}
+          className="rounded-lg border border-partselect-gray-200 bg-white px-3 py-2 text-left text-xs text-partselect-gray-700 transition hover:border-partselect-teal hover:bg-partselect-gray-50 disabled:opacity-50 sm:text-sm"
+        >
+          {prompt}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -119,8 +159,8 @@ function EmptyState({ onSelect }: { onSelect: (prompt: string) => void }) {
         How can I help you today?
       </h1>
       <p className="mt-2 max-w-md text-sm text-partselect-gray-600 sm:text-base">
-        Ask about refrigerator and dishwasher parts — compatibility,
-        installation, troubleshooting, or ordering on PartSelect.com.
+        Find the right PartSelect part — compatibility, installation,
+        troubleshooting, and ordering on PartSelect.com.
       </p>
       <div className="mt-8 grid w-full max-w-2xl gap-2 sm:grid-cols-2">
         {SUGGESTED_PROMPTS.map((prompt) => (
@@ -149,8 +189,10 @@ export function ChatAssistant() {
   const activePart = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       const msg = messages[i];
-      if (msg.role === "assistant" && msg.parts?.[0]) {
-        return msg.parts[0];
+      if (msg.role === "assistant" && msg.parts?.length) {
+        return (
+          msg.parts.find((p) => p.card_role !== "recommended") ?? msg.parts[0]
+        );
       }
     }
     return undefined;
@@ -179,12 +221,16 @@ export function ChatAssistant() {
       let assistant = "";
       const cards: PartCard[] = [];
       let handoff: PurchaseHandoffEvent | undefined;
+      let suggestions: string[] = [];
       const seenPs = new Set<string>();
 
-      const pushCard = (part: PartCard) => {
+      const pushCard = (
+        part: PartCard,
+        cardRole: PartCard["card_role"] = "primary",
+      ) => {
         if (seenPs.has(part.ps_number)) return;
         seenPs.add(part.ps_number);
-        cards.push(part);
+        cards.push({ ...part, card_role: cardRole });
       };
 
       try {
@@ -213,7 +259,10 @@ export function ChatAssistant() {
             assistant = event.content;
           }
           if (event.type === "product_card" && event.part) {
-            pushCard(event.part);
+            pushCard(event.part, event.card_role ?? "primary");
+          }
+          if (event.type === "suggestions" && event.prompts?.length) {
+            suggestions = event.prompts;
           }
         }
         setMessages((m) => [
@@ -224,6 +273,7 @@ export function ChatAssistant() {
               assistant || "No response from the assistant. Please try again.",
             parts: cards.length > 0 ? cards : undefined,
             purchaseHandoff: handoff,
+            suggestions: suggestions.length > 0 ? suggestions : undefined,
           },
         ]);
       } catch (err) {
@@ -270,7 +320,7 @@ export function ChatAssistant() {
               ProMate Assistant
             </p>
             <p className="text-xs text-partselect-gray-600">
-              Refrigerator &amp; dishwasher parts
+              Your PartSelect parts expert
             </p>
           </div>
         </div>
@@ -315,9 +365,41 @@ export function ChatAssistant() {
                     {msg.purchaseHandoff && (
                       <PurchaseHandoffBanner handoff={msg.purchaseHandoff} />
                     )}
-                    {msg.parts?.slice(1).map((p) => (
-                      <PartCardLink key={p.ps_number} part={p} />
-                    ))}
+                    {(() => {
+                      const recommended =
+                        msg.parts?.filter(
+                          (p) => p.card_role === "recommended",
+                        ) ?? [];
+                      if (recommended.length === 0) return null;
+                      return (
+                        <div className="mt-4 border-t border-partselect-gray-200 pt-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-partselect-teal">
+                            You may also need
+                          </p>
+                          <p className="mt-1 mb-2 text-xs text-partselect-gray-600">
+                            Companion parts from this answer that may also be
+                            required for the repair or install.
+                          </p>
+                          {recommended.map((p) => (
+                            <PartCardLink key={p.ps_number} part={p} />
+                          ))}
+                        </div>
+                      );
+                    })()}
+                    {msg.role === "assistant" &&
+                      msg.suggestions &&
+                      msg.suggestions.length > 0 && (
+                        <div className="mt-4 border-t border-partselect-gray-200 pt-3">
+                          <p className="text-xs font-semibold text-partselect-gray-600">
+                            Suggested follow-ups
+                          </p>
+                          <SuggestedPrompts
+                            prompts={msg.suggestions}
+                            onSelect={(prompt) => void send(prompt)}
+                            disabled={loading}
+                          />
+                        </div>
+                      )}
                   </div>
                 ))}
                 {loading && (
