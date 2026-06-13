@@ -72,7 +72,8 @@ export async function* streamChat(
   message: string,
   threadId?: string,
 ): AsyncGenerator<ChatEvent> {
-  const res = await fetch(`${API_BASE}/api/v1/chat`, {
+  // Same-origin proxy (app/api/chat/route.ts) → InvokeAgentRuntime → AgentCore.
+  const res = await fetch(`/api/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
