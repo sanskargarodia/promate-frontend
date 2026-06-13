@@ -35,5 +35,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Python virtual envs (local tooling)
+.venv/
+
 # Local-only docs (keep out of version control)
 CLAUDE.md
