@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${inter.variable} h-full overflow-hidden bg-white font-sans antialiased`}
+        className={`${inter.variable} h-full overflow-hidden bg-app-gradient font-sans antialiased`}
       >
         <main className="h-full">{children}</main>
       </body>
