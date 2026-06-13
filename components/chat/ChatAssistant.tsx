@@ -25,6 +25,17 @@ import { ProductCardTile } from "./ProductCardTile";
 import { ProductDetailPanel } from "./ProductDetailPanel";
 
 const DEFAULT_ACTIVITY = "Thinking…";
+const THREAD_ID_STORAGE_KEY = "promate:thread_id";
+
+function readStoredThreadId(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const value = sessionStorage.getItem(THREAD_ID_STORAGE_KEY)?.trim();
+    return value || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 const SUGGESTED_PROMPTS = [
   {
@@ -250,7 +261,7 @@ function EmptyState({ onSelect }: { onSelect: (prompt: string) => void }) {
 export function ChatAssistant() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [threadId, setThreadId] = useState<string | undefined>();
+  const threadIdRef = useRef<string | undefined>(readStoredThreadId());
   const [loading, setLoading] = useState(false);
   const [activityMessage, setActivityMessage] = useState(DEFAULT_ACTIVITY);
   const [selectedPart, setSelectedPart] = useState<PartCard | null>(null);
@@ -280,6 +291,24 @@ export function ChatAssistant() {
     textareaRef.current?.focus();
   }, []);
 
+  const persistThreadId = useCallback((id: string) => {
+    threadIdRef.current = id;
+    try {
+      sessionStorage.setItem(THREAD_ID_STORAGE_KEY, id);
+    } catch {
+      // Ignore quota / private browsing failures.
+    }
+  }, []);
+
+  const clearThreadId = useCallback(() => {
+    threadIdRef.current = undefined;
+    try {
+      sessionStorage.removeItem(THREAD_ID_STORAGE_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+  }, []);
+
   const send = useCallback(
     async (text: string) => {
       if (!text.trim() || loading) return;
@@ -306,9 +335,12 @@ export function ChatAssistant() {
       };
 
       try {
-        for await (const event of streamChat(text.trim(), threadId)) {
+        for await (const event of streamChat(
+          text.trim(),
+          threadIdRef.current,
+        )) {
           if (event.type === "session" && event.thread_id) {
-            setThreadId(event.thread_id);
+            persistThreadId(event.thread_id);
           }
           if (event.type === "status" && event.message) {
             setActivityMessage(event.message);
@@ -369,7 +401,7 @@ export function ChatAssistant() {
         requestAnimationFrame(() => textareaRef.current?.focus());
       }
     },
-    [loading, threadId],
+    [loading, persistThreadId],
   );
 
   const onSubmit = (e: FormEvent) => {
@@ -387,7 +419,7 @@ export function ChatAssistant() {
   const startNewChat = () => {
     if (loading) return;
     setMessages([]);
-    setThreadId(undefined);
+    clearThreadId();
     setInput("");
     setSelectedPart(null);
     setMobileExpandedPs(null);
